@@ -1,14 +1,17 @@
-// Token Types 
-const TKN_INT = 'INT';
-const TKN_FLOAT = 'FLOAT';
-const TKN_PLUS = 'PLUS';
-const TKN_MINUS = 'MINUS';
-const TKN_MUL = 'MUL';
-const TKN_DIV = 'DIV';
-const TKN_EXPONENT = 'EXPONENT';
-const TKN_LPAREN = 'LPAREN';
-const TKN_RPAREN = 'RPAREN';
-const DIGITS = '0123456789';
+import { BaseErrorWithPositionInfo } from "./base-error.mjs";
+import { TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
+
+class InvalidCharacterError extends BaseErrorWithPositionInfo {
+    constructor(character, characterPosition, linePosition, lineString) {
+        super('InvalidCharacterError', `Invalid character found: [${character}]`, character, characterPosition, linePosition, lineString);
+    }    
+}
+
+class InvalidNumberError extends BaseErrorWithPositionInfo {
+    constructor(number, characterPosition, linePosition, lineString) {
+        super('InvalidNumberError', `Invalid number found: [${number}]`, number, characterPosition, linePosition, lineString);
+    }    
+}
 
 class token {
     constructor(type, value) {
@@ -46,7 +49,7 @@ export class Lexer {
         else if(dotCount === 1)
             this.tokens.push(new token(TKN_FLOAT, parseFloat(num_str)));
         else
-            throw new Error(`Invalid number found: ${num_str}`);
+            throw new InvalidNumberError(num_str, this.pos, 1, this.text); //hacky? ToDO - change linePosition later
     }
 
     tokenize() {
@@ -105,83 +108,9 @@ export class Lexer {
                 continue;
             }
 
-            throw new Error(`Invalid character found: [${current_char}]`);
+            throw new InvalidCharacterError(current_char, this.pos, 1, this.text); //hacky? ToDO - change linePosition later
         }
 
         return this.tokens;
     }
-}
-
-class NumberNode {
-    constructor(token) {
-        this.value = token.value;
-    }
-
-    toString() {
-        return `Num(${this.value})`;
-    }
-}
-
-class binaryOperator {
-    constructor(leftNode, operator, rightNode) {
-        this.leftNode = leftNode;
-        this.rightNode = rightNode;
-        this.operator = operator;
-    }
-
-    toString() {
-        return `BinOp(${this.leftNode}, ${this.operator}, ${this.rightNode})`;
-    }
-}
-
-export class Parser{
-    constructor(tokens){
-        this.tokens = tokens;
-        this.tokenIndex = -1;
-        this.currentToken = null
-        this.AST = null;
-        this.advance();
-    }
-
-    advance(){
-        this.tokenIndex++;
-        if (this.tokenIndex < this.tokens.length){
-            this.currentToken = this.tokens[this.tokenIndex];
-        }
-    }
-
-    factor(){
-        let tok = this.currentToken;
-        if(tok.type === TKN_INT || tok.type === TKN_FLOAT){
-            this.advance();
-            return new NumberNode(tok);
-        }
-    }
-
-    term(){
-        //multiply and divide operators
-        return this.binop(this.factor.bind(this), [TKN_MUL, TKN_DIV, TKN_EXPONENT]);
-    }
-
-    expr(){
-        //addition and subtraction operators
-        return this.binop(this.term.bind(this), [TKN_PLUS, TKN_MINUS]);
-    }
-
-    binop(func, ops){
-        let leftTerm = func();
-        while(ops.includes(this.currentToken.type)){
-            let op = this.currentToken;
-            this.advance();
-            let right = func();
-            leftTerm = new binaryOperator(leftTerm, op, right);
-        }
-        return leftTerm;
-    }
-
-    parse(){
-        this.AST = this.expr();
-        return this.AST;
-    }
-
 }

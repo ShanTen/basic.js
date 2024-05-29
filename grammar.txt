@@ -15,3 +15,8 @@ Term --> 8
 Terms can be length 1 or 2
 
 expression = 8 + (12 * 84)
+
+A factor is just a number
+An expression is a term +/- another term
+A term is a factor multiplied or divided by another factor
+A factor is just a number
