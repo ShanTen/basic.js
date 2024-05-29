@@ -1,4 +1,21 @@
 import { TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
+import { BaseErrorWithPositionInfo } from './base-error.mjs';
+
+//////////// Error classes //////////////
+
+class InvalidNumberError extends BaseErrorWithPositionInfo {
+    constructor(num_str, linePosition, lineNum, text){
+        super('InvalidNumberError', `Invalid number found: [${num_str}]`, num_str, linePosition, lineNum, text);
+    }
+}
+
+class InvalidSyntaxError extends BaseErrorWithPositionInfo {
+    constructor(token, linePosition, lineNum, text){
+        super('InvalidSyntaxError', `Invalid syntax found near: [${token}]`, token, linePosition, lineNum, text);
+    }
+}
+
+//////////// Parser Helper classes //////////////
 
 class NumberNode {
     constructor(token) {
@@ -22,6 +39,33 @@ class binaryOperator {
     }
 }
 
+class ParseResult{
+    constructor(){
+        this.error = error;
+        this.node = node;
+    }
+
+    register(res){
+        if(typeof res === ParseResult){
+            if(res.error) this.error = res.error;
+            return res.node;
+        }
+        return res;
+    }
+
+    success(node){
+        this.node = node;
+        return this;
+    }
+
+    failure(error){
+        this.error = error;
+        return this;
+    }
+}
+
+//////////// Parser Class //////////////
+
 export class Parser{
     constructor(tokens){
         this.tokens = tokens;
@@ -35,22 +79,24 @@ export class Parser{
         this.tokenIndex++;
         if (this.tokenIndex < this.tokens.length){
             this.currentToken = this.tokens[this.tokenIndex];
+            return this.currentToken;
         }
+        return null;
     }
 
     factor(){
+        let res = new ParseResult();
+
         let tok = this.currentToken;
         if(tok.type === TKN_PLUS || tok.type === TKN_MINUS ){
-            this.advance();
-
+            res.register(this.advance());
         }
         else if(tok.type === TKN_INT || tok.type === TKN_FLOAT){
-            this.advance();
-            return new NumberNode(tok);
+            res.register(this.advance());
+            return res.success(new NumberNode(tok));
         }
         else {
-            //throw error
-            console.log("syntax error")
+            return res.failure(new InvalidSyntaxError(tok, tok.linePosition, tok.lineNum, tok.text));
         }
     }
 
@@ -80,10 +126,4 @@ export class Parser{
         return this.AST;
     }
 
-}
-
-export class BetterParser{
-    constructor(tokens){
-        this.tokens = tokens 
-    }       
 }

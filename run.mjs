@@ -5,15 +5,18 @@ import fs from 'fs';
 
 try{
     let program = fs.readFileSync(path_to_file, 'utf8');
+
     let myLexer = new Lexer(program);
     let tokens = myLexer.tokenize();
-    let myParser = new Parser(tokens);
-    let result = myParser.parse();    
+
+    // let myParser = new Parser(tokens);
+    // let result = myParser.parse();    
 
     console.log('Tokens are:');
     console.log(tokens);
-    console.log('Result is:');
-    console.log(result);
+
+    // console.log('Result is:');
+    // console.log(result);
 }
 catch(err){
     console.log(err.toString());
