@@ -1,18 +1,19 @@
-import { TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
-import { BaseErrorWithPositionInfo } from './base-error.mjs';
+import { TKN_EOF, TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
+import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from './base-error.mjs';
+
 
 //////////// Error classes //////////////
 
-class InvalidNumberError extends BaseErrorWithPositionInfo {
-    constructor(num_str, linePosition, lineNum, text){
-        super('InvalidNumberError', `Invalid number found: [${num_str}]`, num_str, linePosition, lineNum, text);
-    }
+class InvalidNumberError extends BaseErrorWithStartEndPosInfo {
+    constructor(number, start, end, linePosition, lineString) {
+        super('InvalidNumberError', `Invalid number found: [${number}]`, start, end, linePosition, lineString);
+    }        
 }
 
-class InvalidSyntaxError extends BaseErrorWithPositionInfo {
-    constructor(token, linePosition, lineNum, text){
-        super('InvalidSyntaxError', `Invalid syntax found near: [${token}]`, token, linePosition, lineNum, text);
-    }
+class InvalidSyntaxError extends BaseErrorWithStartEndPosInfo {
+    constructor(token, start, linePosition, lineString) {
+        super('InvalidSyntaxError', `Invalid syntax found: [${token.value}]`, start, token.pos_end, linePosition, lineString);
+    }        
 }
 
 //////////// Parser Helper classes //////////////
@@ -40,14 +41,15 @@ class binaryOperator {
 }
 
 class ParseResult{
-    constructor(){
+    constructor(error=null, node=null){
         this.error = error;
         this.node = node;
     }
 
     register(res){
         if(typeof res === ParseResult){
-            if(res.error) this.error = res.error;
+            if(res.error) 
+                this.error = res.error;
             return res.node;
         }
         return res;
@@ -67,12 +69,13 @@ class ParseResult{
 //////////// Parser Class //////////////
 
 export class Parser{
-    constructor(tokens){
+    constructor(tokens, lines){
         this.tokens = tokens;
         this.tokenIndex = -1;
         this.currentToken = null
         this.AST = null;
         this.advance();
+        this.lines = lines
     }
 
     advance(){
@@ -96,7 +99,8 @@ export class Parser{
             return res.success(new NumberNode(tok));
         }
         else {
-            return res.failure(new InvalidSyntaxError(tok, tok.linePosition, tok.lineNum, tok.text));
+            //Probably an invalid number
+            throw res.failure(new InvalidNumberError(tok.value, tok.pos_start, tok.pos_end, tok.line_number, tok.line_string));
         }
     }
 
@@ -111,18 +115,29 @@ export class Parser{
     }
 
     binop(func, ops){
-        let leftTerm = func();
+        let res = new ParseResult();
+        let leftTerm = res.register(func());
+        if(res.error) return res; //should be res
+
         while(ops.includes(this.currentToken.type)){
             let op = this.currentToken;
-            this.advance();
-            let right = func();
+            res.register(this.advance());
+            let right = res.register(func());
+            if(res.error) return res; 
             leftTerm = new binaryOperator(leftTerm, op, right);
         }
         return leftTerm;
     }
 
     parse(){
-        this.AST = this.expr();
+        let res = this.expr();
+        // console.log(res);
+        if(!res.error && this.currentToken.type !== TKN_EOF){
+            console.log(this.currentToken);
+            console.log(this.tokens[this.tokenIndex-1])
+            throw new InvalidSyntaxError(this.currentToken, this.currentToken.pos_start, this.currentToken.line_number, this.lines.get_line_string(this.currentToken.line_number));
+        }
+        this.AST = res;
         return this.AST;
     }
 

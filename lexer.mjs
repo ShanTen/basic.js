@@ -1,8 +1,5 @@
 import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from "./base-error.mjs";
-import { TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
-
-const osFlavour = "WindowsNT" //Options are "WindowsNT" or "Unix";
-const newLineChar = osFlavour === "WindowsNT" ? '\r\n' : '\n';
+import { TKN_EOF ,TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
 
 class InvalidCharacterError extends BaseErrorWithPositionInfo {
     constructor(character, characterPosition, linePosition, lineString) {
@@ -10,18 +7,11 @@ class InvalidCharacterError extends BaseErrorWithPositionInfo {
     }    
 }
 
-// class InvalidNumberError extends BaseErrorWithPositionInfo {
-//     constructor(number, characterPosition, linePosition, lineString) {
-//         super('InvalidNumberError', `Invalid number found: [${number}]`, number, characterPosition, linePosition, lineString);
-//     }    
-// }
-
 class InvalidNumberError extends BaseErrorWithStartEndPosInfo {
     constructor(number, start, end, linePosition, lineString) {
         super('InvalidNumberError', `Invalid number found: [${number}]`, start, end, linePosition, lineString);
     }        
 }
-
 
 class token {
     constructor(type, value, pos_start=null, pos_end=null, line_number=null) {
@@ -43,7 +33,7 @@ class token {
     toString() {
 
         if(this.line_number){
-            if(pos_start && pos_end)
+            if(this.pos_start && this.pos_end)
                 return `Token(${this.type}, ${this.value}, pos_start=${this.pos_start}, pos_end=${this.pos_end}, line_number=${this.line_number})`;
             else
                 return `Token(${this.type}, ${this.value}, line_number=${this.line_number})`;
@@ -57,17 +47,18 @@ class token {
 
 
 export class Lexer {
-    constructor(text) {
+    constructor(text, lines) {
         this.text = text;
         this.tokens = [];
         this.pos = 0;
         this.lineNumber = 1;
         this.pos_in_line = 0;
         this.lineStr = ""
+        this.lines = lines
     }
 
     get_lines_array(){
-        return this.text.split(newLineChar);
+        return this.lines
     }
 
     get_line_string(){
@@ -181,6 +172,7 @@ export class Lexer {
             throw new InvalidCharacterError(current_char, this.pos, 1, this.text); //hacky? ToDO - change linePosition later
         }
 
+        this.tokens.push(new token(TKN_EOF, null, this.pos, this.pos+1, this.lineNumber));
         return this.tokens;
     }
 }
