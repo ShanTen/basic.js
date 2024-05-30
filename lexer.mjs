@@ -1,4 +1,4 @@
-import { BaseErrorWithPositionInfo } from "./base-error.mjs";
+import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from "./base-error.mjs";
 import { TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
 
 const osFlavour = "WindowsNT" //Options are "WindowsNT" or "Unix";
@@ -10,11 +10,18 @@ class InvalidCharacterError extends BaseErrorWithPositionInfo {
     }    
 }
 
-class InvalidNumberError extends BaseErrorWithPositionInfo {
-    constructor(number, characterPosition, linePosition, lineString) {
-        super('InvalidNumberError', `Invalid number found: [${number}]`, number, characterPosition, linePosition, lineString);
-    }    
+// class InvalidNumberError extends BaseErrorWithPositionInfo {
+//     constructor(number, characterPosition, linePosition, lineString) {
+//         super('InvalidNumberError', `Invalid number found: [${number}]`, number, characterPosition, linePosition, lineString);
+//     }    
+// }
+
+class InvalidNumberError extends BaseErrorWithStartEndPosInfo {
+    constructor(number, start, end, linePosition, lineString) {
+        super('InvalidNumberError', `Invalid number found: [${number}]`, start, end, linePosition, lineString);
+    }        
 }
+
 
 class token {
     constructor(type, value, pos_start=null, pos_end=null, line_number=null) {
@@ -56,6 +63,15 @@ export class Lexer {
         this.pos = 0;
         this.lineNumber = 1;
         this.pos_in_line = 0;
+        this.lineStr = ""
+    }
+
+    get_lines_array(){
+        return this.text.split(newLineChar);
+    }
+
+    get_line_string(){
+        return this.get_lines_array()[this.lineNumber-1];
     }
 
     go_to_next_line() {
@@ -88,7 +104,7 @@ export class Lexer {
         else if(dotCount === 1)
             this.tokens.push(new token(TKN_FLOAT, parseFloat(num_str), initialPosition, this.pos_in_line, this.lineNumber));
         else{
-            throw new InvalidNumberError(num_str, this.pos_in_line, 1, this.text); //hacky? ToDO - change linePosition later
+            throw new InvalidNumberError(num_str, initialPosition, this.pos_in_line, this.lineNumber, this.lineStr);
         }
             
     }
@@ -97,6 +113,7 @@ export class Lexer {
         let current_char;
         while (this.pos < this.text.length) {
             current_char = this.text[this.pos];
+            this.lineStr = this.get_line_string();
 
             if(current_char === '\r'){
                 this.advance();
