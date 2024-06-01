@@ -12,7 +12,10 @@ class InvalidNumberError extends BaseErrorWithStartEndPosInfo {
 
 class InvalidSyntaxError extends BaseErrorWithStartEndPosInfo {
     constructor(token, start, linePosition, lineString) {
-        super('InvalidSyntaxError', `Invalid syntax found: [${token.value}]`, start, token.pos_end, linePosition, lineString);
+        if(!token.value)
+            super('InvalidSyntaxError', `Invalid syntax found: Check code`, start, token.pos_end, linePosition, lineString);
+        else
+            super('InvalidSyntaxError', `Invalid syntax found: Check code near [${token.value}]`, start, token.pos_end, linePosition, lineString);
     }        
 }
 
@@ -106,6 +109,23 @@ export class Parser{
             res.register(this.advance());
             return res.success(new NumberNode(tok));
         }
+        else if(tok.type === TKN_LPAREN){
+            res.register(this.advance());
+            let expr = res.register(this.expr());
+            if(res.error) return res;
+            if(this.currentToken.type === TKN_RPAREN){
+                res.register(this.advance());
+                return res.success(expr);
+            }
+            else{
+                throw new InvalidSyntaxError(
+                    this.currentToken, 
+                    this.currentToken.pos_start, 
+                    this.currentToken.line_number, 
+                    this.lineHandler.get_line_string(this.currentToken.line_number)
+                );
+            }
+        }
         else {
             
             //ignore the token
@@ -142,6 +162,16 @@ export class Parser{
             let op = this.currentToken;
             res.register(this.advance());
             let right = res.register(func());
+
+            if(!right){
+                throw new InvalidSyntaxError(
+                    this.currentToken, 
+                    this.currentToken.pos_start, 
+                    this.currentToken.line_number, 
+                    this.lineHandler.get_line_string(this.currentToken.line_number)
+                );
+            }
+
             if(res.error) return res; 
             leftTerm = new binaryOperator(leftTerm, op, right);
         }
