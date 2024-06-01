@@ -1,6 +1,5 @@
-import { TKN_EOF, TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
+import { TKN_EOF, TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS, TKN_EOS} from './token-types.mjs';
 import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from './base-error.mjs';
-
 
 //////////// Error classes //////////////
 
@@ -94,6 +93,7 @@ export class Parser{
         let res = new ParseResult();
 
         let tok = this.currentToken;
+
         if(tok.type === TKN_PLUS || tok.type === TKN_MINUS ){
             res.register(this.advance());
         }
@@ -102,8 +102,19 @@ export class Parser{
             return res.success(new NumberNode(tok));
         }
         else {
+            
+            //ignore the token
+            if(!tok.type === TKN_EOS)
+
             //Probably an invalid number
-            throw res.failure(new InvalidNumberError(tok.value, tok.pos_start, tok.pos_end, tok.line_number, tok.line_string));
+            throw res.failure(
+                new InvalidNumberError(
+                    tok.value, 
+                    tok.pos_start, 
+                    tok.pos_end, 
+                    tok.line_number, 
+                    this.lineHandler.get_line_string(tok.line_number)
+                ));
         }
     }
 
@@ -134,11 +145,15 @@ export class Parser{
 
     parse(){
         let res = this.expr();
-        // console.log(res);
         if(!res.error && this.currentToken.type !== TKN_EOF){
             console.log(this.currentToken);
             console.log(this.tokens[this.tokenIndex-1])
-            throw new InvalidSyntaxError(this.currentToken, this.currentToken.pos_start, this.currentToken.line_number, this.lines.get_line_string(this.currentToken.line_number));
+            throw new InvalidSyntaxError(
+                this.currentToken, 
+                this.currentToken.pos_start, 
+                this.currentToken.line_number, 
+                this.lineHandler.get_line_string(this.currentToken.line_number)
+            );
         }
         this.AST = res;
         return this.AST;
