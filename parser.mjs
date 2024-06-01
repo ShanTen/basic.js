@@ -69,13 +69,16 @@ class ParseResult{
 //////////// Parser Class //////////////
 
 export class Parser{
-    constructor(tokens, lines){
+    constructor(tokens, lineHandler){
         this.tokens = tokens;
         this.tokenIndex = -1;
         this.currentToken = null
         this.AST = null;
+
+        this.lineHandler = lineHandler;
+        this.lines = this.lineHandler.lines; //insane I know
+
         this.advance();
-        this.lines = lines
     }
 
     advance(){
