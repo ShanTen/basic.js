@@ -1,5 +1,5 @@
 const path_to_file = process.argv[2];
-import { Lexer } from './lexer2.mjs';
+import { Lexer } from './lexer.mjs';
 import { LineHandler } from './lines.mjs';
 import { Parser } from './parser.mjs';
 import fs from 'fs';

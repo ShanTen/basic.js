@@ -1,3 +1,5 @@
+/*Lexer re-write from scratch to implement proper line support using lines.mjs*/
+
 import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from "./base-error.mjs";
 import { TKN_EOF ,TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
 
@@ -13,6 +15,17 @@ class InvalidNumberError extends BaseErrorWithStartEndPosInfo {
     }        
 }
 
+/**
+ * A token object takes in two required arguments, type and value, and three optional arguments, pos_start, pos_end, and line_number.
+ * @param {string} type - The type of token.
+ * @param {string} value - The value of the token.
+ * @param {number} pos_start - The starting position of the token.
+ * @param {number} pos_end - The ending position of the token.
+ * @param {number} line_number - The line number of the token.
+ * @returns {object} - A token object.
+ * @example
+ * let myToken = new token(TKN_PLUS, '+', 0, 1, 1);
+ */
 class token {
     constructor(type, value, pos_start=null, pos_end=null, line_number=null) {
         this.type = type;
@@ -45,45 +58,41 @@ class token {
     
 }
 
-
 export class Lexer {
-    constructor(text, lineHandler) {
+    /*
+        The lexer has no clue where the line starts and ends. 
+        It just gets a string of text, it tracks the character position though, calls it "pos".
+
+        When it passes pos to a lineHandler method called get_position_in_line, it gets back a tuple of line number and position in line.
+        lineHandler.get_position_in_line(pos) => [line, pos_in_line]
+
+        The lexer has a method called advance, which increments the pos by 1.
+    */
+
+    constructor(text, lineHandler){
         this.text = text;
         this.tokens = [];
         this.pos = 0;
-        this.pos_in_line = 0;
-        this.lineNumber = 1;
         this.lineHandler = lineHandler;
-        this.lines = lineHandler.lines
-        this.lineStr = "";
     }
 
-    get_lines_array(){
-        return this.lines
-    }
-
-    get_line_string(){
-        return this.get_lines_array()[this.lineNumber-1];
-    }
-
-    go_to_next_line() {
-        this.lineNumber++;
-        this.pos_in_line = 0;
-    }
-
-
-    
     advance() {
         this.pos++;
-        this.pos_in_line++;
+    }
+
+    get_position_in_line(){
+        return this.lineHandler.get_position_in_line(this.pos);
     }
 
     make_number() {
         let num_str = ''
         let dotCount = 0
 
+        //this is the position in line
+        let _posInLine = this.get_position_in_line()[1];
+
         //this is very stupid, my fault for using an equally stupid language
-        let initialPosition = JSON.parse(JSON.stringify(this.pos_in_line));
+        let initialPosition = JSON.parse(JSON.stringify(_posInLine));
 
         while (this.pos < this.text.length && (DIGITS.includes(this.text[this.pos]) || this.text[this.pos] === '.')) {
             if (this.text[this.pos] === '.') {
@@ -94,35 +103,46 @@ export class Lexer {
         }
 
         if (dotCount === 0) 
-            this.tokens.push(new token(TKN_INT, parseInt(num_str), initialPosition, this.pos_in_line, this.lineNumber)); //hacky?
+            this.tokens.push(new token(
+                TKN_INT, 
+                parseInt(num_str), 
+                initialPosition, 
+                this.get_position_in_line()[1], 
+                this.get_position_in_line()[0]
+            )); //hacky?
         else if(dotCount === 1)
             this.tokens.push(new token(TKN_FLOAT, parseFloat(num_str), initialPosition, this.pos_in_line, this.lineNumber));
         else{
             throw new InvalidNumberError(
+
                 num_str, 
                 initialPosition, 
-                this.pos_in_line, 
-                this.lineNumber, 
-                this.lineStr
+                this.get_position_in_line()[1], 
+                this.get_position_in_line()[0],
+
+                this.lineHandler.get_line_string(this.get_position_in_line()[0]) //what the fuck
+
+
             );
         }
             
     }
 
-    tokenize() {
+
+    tokenize(){
         let current_char;
         while (this.pos < this.text.length) {
             current_char = this.text[this.pos];
+            let [_line, _posInLine] = this.lineHandler.get_position_in_line(this.pos);
 
             if(current_char === '\r'){
                 this.advance();
-                continue;
+                continue
             }
 
             if(current_char === '\n'){
-                this.go_to_next_line();
                 this.advance();
-                continue;
+                continue
             }
 
             if (current_char === ' ') {
@@ -131,43 +151,99 @@ export class Lexer {
             }
 
             if (current_char === '+') {
-                this.tokens.push(new token(TKN_PLUS, '+', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_PLUS, 
+                    '+', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
 
             if (current_char === '-') {
-                this.tokens.push(new token(TKN_MINUS, '-', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_MINUS, 
+                    '-', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
 
             if (current_char === '*') {
-                this.tokens.push(new token(TKN_MUL, '*', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_MUL, 
+                    '*', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
 
             if (current_char === '/') {
-                this.tokens.push(new token(TKN_DIV, '/', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_DIV, 
+                    '/', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
 
             if (current_char === '^') {
-                this.tokens.push(new token(TKN_EXPONENT, '^', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_EXPONENT, 
+                    '^', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
 
             if (current_char === '(') {
-                this.tokens.push(new token(TKN_LPAREN, '(', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_LPAREN, 
+                    '(', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
 
             if (current_char === ')') {
-                this.tokens.push(new token(TKN_RPAREN, ')', this.pos_in_line, this.pos_in_line+1, this.lineNumber));
+
+                this.tokens.push(new token(
+                    TKN_RPAREN, 
+                    ')', 
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line
+                ));
+
                 this.advance();
                 continue;
             }
@@ -177,12 +253,20 @@ export class Lexer {
                 continue;
             }
 
-
             
-            throw new InvalidCharacterError(current_char, this.pos, this.lineNumber, this.get_line_string()); //hacky? ToDO - change linePosition later
+            console.log(this.get_position_in_line())
+            
+
+            throw new InvalidCharacterError(
+                current_char, 
+                this.get_position_in_line()[1],
+                this.get_position_in_line()[0],
+                this.lineHandler.get_line_string(_line)
+            );
+
         }
 
-        this.tokens.push(new token(TKN_EOF, null, this.pos, this.pos+1, this.lineNumber));
+        this.tokens.push(new token(TKN_EOF, null, this.pos, this.pos+1, this.lineHandler.get_position_in_line()[0]));
         return this.tokens;
     }
 }
