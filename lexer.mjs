@@ -1,7 +1,7 @@
 /*Lexer re-write from scratch to implement proper line support using lines.mjs*/
 
 import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from "./base-error.mjs";
-import { TKN_EOF ,TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
+import { TKN_EOS, TKN_EOF ,TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS} from './token-types.mjs';
 
 class InvalidCharacterError extends BaseErrorWithPositionInfo {
     constructor(character, characterPosition, linePosition, lineString) {
@@ -150,6 +150,18 @@ export class Lexer {
                 continue;
             }
 
+            if(current_char === ';'){
+                this.tokens.push(new token(
+                    TKN_EOS,
+                    ';',
+                    _posInLine, 
+                    _posInLine+1, 
+                    _line                    
+                ))
+                this.advance();
+                continue;
+            }
+
             if (current_char === '+') {
 
                 this.tokens.push(new token(
@@ -252,10 +264,6 @@ export class Lexer {
                 this.make_number();
                 continue;
             }
-
-            
-            console.log(this.get_position_in_line())
-            
 
             throw new InvalidCharacterError(
                 current_char, 

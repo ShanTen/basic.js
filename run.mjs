@@ -1,7 +1,7 @@
 const path_to_file = process.argv[2];
 import { Lexer } from './lexer.mjs';
 import { LineHandler } from './lines.mjs';
-import { Parser } from './parser.mjs';
+import { Parser } from './parser2.mjs';
 import fs from 'fs';
 
 const args = process.argv.slice();
@@ -19,10 +19,10 @@ try{
         console.log(tokens);
     }
 
-    // let myParser = new Parser(tokens, programLineHandler);
-    // let result = myParser.parse();
-    // console.log('Result is:');
-    // console.log(JSON.stringify(result, null, 2));
+    let myParser = new Parser(tokens, programLineHandler);
+    let result = myParser.parse();
+    console.log('Result is:');
+    console.log(JSON.stringify(result, null, 2));
 }
 catch(err){
     console.log(err.toString());

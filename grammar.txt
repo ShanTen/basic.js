@@ -20,3 +20,5 @@ A factor is just a number
 An expression is a term +/- another term
 A term is a factor multiplied or divided by another factor
 A factor is just a number
+
+BABE WAKE UP NEW FEATURE DROPPED ... SEMI COLONS TO DENOTE END OF LINE/STATEMENT
