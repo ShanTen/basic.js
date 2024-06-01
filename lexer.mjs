@@ -26,7 +26,7 @@ class InvalidNumberError extends BaseErrorWithStartEndPosInfo {
  * @example
  * let myToken = new token(TKN_PLUS, '+', 0, 1, 1);
  */
-class token {
+export class token {
     constructor(type, value, pos_start=null, pos_end=null, line_number=null) {
         this.type = type;
         this.value = value;

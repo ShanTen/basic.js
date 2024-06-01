@@ -1,5 +1,6 @@
 import { TKN_EOF, TKN_INT, TKN_FLOAT, TKN_PLUS, TKN_MINUS, TKN_MUL, TKN_DIV, TKN_EXPONENT, TKN_LPAREN, TKN_RPAREN, DIGITS, TKN_EOS} from './token-types.mjs';
 import { BaseErrorWithPositionInfo, BaseErrorWithStartEndPosInfo } from './base-error.mjs';
+import { token} from './lexer.mjs';
 
 //////////// Error classes //////////////
 
@@ -94,8 +95,12 @@ export class Parser{
 
         let tok = this.currentToken;
 
+        //Unary operators
         if(tok.type === TKN_PLUS || tok.type === TKN_MINUS ){
             res.register(this.advance());
+            let factor = res.register(this.factor());
+            if(res.error) return res;
+            return res.success(new binaryOperator(new NumberNode(new token(TKN_INT, 0)), tok, factor));
         }
         else if(tok.type === TKN_INT || tok.type === TKN_FLOAT){
             res.register(this.advance());
