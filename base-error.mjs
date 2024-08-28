@@ -40,7 +40,7 @@ export class BaseErrorWithPositionInfo extends BaseError {
     toString() {
         this.setErrorMarker();
         //Prajol suggestion
-        let line2 = `${this.linePosition}\t${this.lineString}\n\t${this.errorMarker}`;
+        let line2 = `${this.linePosition}|\t${this.lineString}\n\t${this.errorMarker}`;
         return `${this.name}: ${this.message} at position ${this.characterPosition} in line ${this.linePosition}:\n\n${line2}`;
     }
 }
@@ -56,7 +56,7 @@ export class BaseErrorWithStartEndPosInfo extends Error {
     }
 
     toString() {
-        let line2 = `${this.linePosition}\t${this.lineString}\n\t`;
+        let line2 = `${this.linePosition} | \t${this.lineString}\n\t`;
         for(let i = 0; i < this.start; i++){
             line2 += '-';
         }

@@ -1,4 +1,5 @@
 const path_to_file = process.argv[2];
+import { Interpreter } from './interpreter.mjs';
 import { Lexer } from './lexer.mjs';
 import { LineHandler } from './lines.mjs';
 import { Parser } from './parser.mjs';
@@ -20,9 +21,13 @@ try{
     }
 
     let myParser = new Parser(tokens, programLineHandler);
-    let result = myParser.parse();
-    console.log('Result is:');
-    console.log(JSON.stringify(result, null, 2));
+    let AST = myParser.parse();
+    
+    
+
+    let myInterpreter = new Interpreter(AST)
+    myInterpreter.processAST()
+
 }
 catch(err){
     console.log(err.toString());
