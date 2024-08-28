@@ -31,7 +31,7 @@ class NumberNode {
     }
 }
 
-class binaryOperator {
+class BinaryOperator {
     constructor(leftNode, operator, rightNode) {
         this.leftNode = leftNode;
         this.rightNode = rightNode;
@@ -103,7 +103,7 @@ export class Parser{
             res.register(this.advance());
             let factor = res.register(this.factor());
             if(res.error) return res;
-            return res.success(new binaryOperator(new NumberNode(new token(TKN_INT, 0)), tok, factor));
+            return res.success(new BinaryOperator(new NumberNode(new token(TKN_INT, 0)), tok, factor));
         }
         else if(tok.type === TKN_INT || tok.type === TKN_FLOAT){
             res.register(this.advance());
@@ -173,7 +173,7 @@ export class Parser{
             }
 
             if(res.error) return res; 
-            leftTerm = new binaryOperator(leftTerm, op, right);
+            leftTerm = new BinaryOperator(leftTerm, op, right);
         }
         return leftTerm;
     }
