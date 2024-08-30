@@ -23,7 +23,7 @@ try{
     let myParser = new Parser(tokens, programLineHandler);
     let AST = myParser.parse();
     
-    
+    // console.log(JSON.stringify(AST, null, 2));    
 
     let myInterpreter = new Interpreter(AST)
     myInterpreter.processAST()
