@@ -21,7 +21,7 @@ class InvalidSyntaxError extends BaseErrorWithStartEndPosInfo {
 
 //////////// Parser Helper classes //////////////
 
-class NumberNode {
+export class NumberNode {
     constructor(token) {
         this.value = token.value;
     }
@@ -31,7 +31,7 @@ class NumberNode {
     }
 }
 
-class BinaryOperator {
+export class BinaryOperator {
     constructor(leftNode, operator, rightNode) {
         this.leftNode = leftNode;
         this.rightNode = rightNode;
@@ -43,7 +43,7 @@ class BinaryOperator {
     }
 }
 
-class ParseResult{
+export class ParseResult{
     constructor(error=null, node=null){
         this.error = error;
         this.node = node;

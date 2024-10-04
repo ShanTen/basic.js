@@ -24,3 +24,6 @@ A term is a factor multiplied or divided by another factor
 A factor is just a number
 
 BABE WAKE UP NEW FEATURE DROPPED ... SEMI COLONS TO DENOTE END OF LINE/STATEMENT
+
+Note as of 22:54 18-09-2024
+I want to end this project at just a arithmetic expression parser

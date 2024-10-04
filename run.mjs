@@ -21,12 +21,19 @@ try{
     }
 
     let myParser = new Parser(tokens, programLineHandler);
+
     let AST = myParser.parse();
     
-    // console.log(JSON.stringify(AST, null, 2));    
+    console.log(JSON.stringify(AST, null, 2));    
 
-    let myInterpreter = new Interpreter(AST)
-    myInterpreter.processAST()
+    let myInterpreter = new Interpreter()
+    myInterpreter.visit(AST)
+    // myInterpreter.processAST()
+
+    // console.log(AST)
+    // let interpreter = new RecursiveTreeInterpreter(AST);
+    // let result = interpreter.visit(AST);
+    // console.log(`result: ${result}`);
 
 }
 catch(err){
